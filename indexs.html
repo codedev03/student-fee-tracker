@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Monthly Fee Collection Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            animation: pulse-ring 1.5s infinite;
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full text-slate-800 font-sans flex flex-col justify-between">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="min-h-full flex flex-col">
+        <!-- Header -->
+        <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-900 shadow-md">
+                        <i class="fa-solid fa-indian-rupee-sign text-lg font-bold"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            Monthly Fee Collection Tracker
+                        </h1>
+                        <p class="text-xs text-slate-400">Audio-enabled monthly student fee ledger</p>
+                    </div>
+                </div>
+
+                <!-- Month Selector & Stats Badges -->
+                <div class="flex flex-wrap items-center gap-3 text-sm">
+                    <div class="bg-slate-800 border border-slate-700/60 px-3 py-1 rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i>
+                        <input type="month" id="month-picker" onchange="changeActiveMonth()" 
+                            class="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer">
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-users text-emerald-400"></i>
+                        <span class="text-slate-400 hidden sm:inline">Students:</span>
+                        <span id="header-student-count" class="font-bold text-emerald-400">0</span>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-amber-400"></i>
+                        <span class="text-slate-400 hidden sm:inline">Total Ledger:</span>
+                        <span id="header-total-amount" class="font-bold text-amber-400">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+            
+            <!-- Voice Input & Quick Add Section -->
+            <div class="bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-900 rounded-2xl p-6 mb-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                    
+                    <!-- Voice Input Hero Button -->
+                    <div class="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto text-center sm:text-left">
+                        <button id="mic-btn" onclick="toggleVoiceRecognition()" 
+                            class="w-20 h-20 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex flex-col items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 group shrink-0 relative focus:outline-none">
+                            <i id="mic-icon" class="fa-solid fa-microphone text-2xl group-hover:animate-bounce"></i>
+                            <span id="mic-label" class="text-[10px] font-semibold mt-1 uppercase tracking-wider">Speak</span>
+                        </button>
+                        
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-center sm:justify-start gap-2">
+                                <h2 class="text-lg font-semibold text-white">Voice Entry Assistant</h2>
+                                <span id="voice-badge" class="px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30">Ready</span>
+                            </div>
+                            <p id="voice-transcript" class="text-sm text-slate-300 min-h-[20px] italic">
+                                "Click mic and speak e.g. 'Rahul 1500' or 'Fayaz 2000'"
+                            </p>
+                            <div class="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-3 pt-1">
+                                <span><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>Active Month: <strong id="active-month-label" class="text-emerald-300">November 2026</strong></span>
+                                <button onclick="showVoiceHelpModal()" class="text-emerald-400 hover:underline font-medium"><i class="fa-solid fa-circle-question mr-1"></i>Help</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="hidden lg:block h-16 w-px bg-slate-800"></div>
+
+                    <!-- Instant Smart Parser / Manual Input -->
+                    <div class="w-full lg:w-auto flex-1 max-w-lg bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 backdrop-blur-sm">
+                        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex justify-between items-center">
+                            <span>Quick Text Command / Add Record</span>
+                            <span class="text-[10px] text-emerald-400">Smart Voice Fallback</span>
+                        </div>
+                        
+                        <form onsubmit="handleQuickPhraseAdd(event)" class="flex gap-2 mb-2">
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-wand-magic-sparkles absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
+                                <input type="text" id="quick-phrase-input" placeholder="Type phrase e.g. 'Rahul 1500' or 'Fayaz 2000'" 
+                                    class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-900/90 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <button type="submit" 
+                                class="bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
+                                <i class="fa-solid fa-bolt text-xs"></i> Parse
+                            </button>
+                        </form>
+
+                        <form id="add-student-form" onsubmit="handleManualAdd(event)" class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="manual-name" placeholder="Student Name" required
+                                class="flex-1 pl-3 pr-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                            <input type="number" id="manual-fee" placeholder="Fee Amount" min="0" required
+                                class="w-full sm:w-24 px-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                            <select id="manual-status" class="w-full sm:w-24 px-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-300 focus:outline-none focus:border-emerald-500">
+                                <option value="Paid">Paid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                            <button type="submit" 
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 shrink-0">
+                                <i class="fa-solid fa-plus text-xs"></i> Add
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Controls Toolbar -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" oninput="renderStudents()" placeholder="Search student name or amount..." 
+                        class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                    <button id="clear-search" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto text-xs sm:text-sm">
+                    
+                    <div class="flex items-center gap-2">
+                        <label for="status-filter" class="text-slate-500 font-medium">Status:</label>
+                        <select id="status-filter" onchange="renderStudents()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:border-emerald-500">
+                            <option value="All">All Statuses</option>
+                            <option value="Paid">Paid Only</option>
+                            <option value="Partial">Partial Only</option>
+                            <option value="Pending">Pending Only</option>
+                        </select>
+                    </div>
+
+                    <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportToCSV()" title="Export current monthly ledger as CSV" 
+                            class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center gap-1.5 border border-slate-200">
+                            <i class="fa-solid fa-file-csv text-emerald-600"></i> Export CSV
+                        </button>
+                        <button onclick="confirmResetData()" title="Reset to default original 51 students list" 
+                            class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 rounded-lg font-medium transition-colors flex items-center gap-1.5 border border-slate-200">
+                            <i class="fa-solid fa-rotate-right"></i> Restore All 51
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Student Directory Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-semibold text-slate-800" id="monthly-directory-title">November 2026 Monthly Roster</h3>
+                        <span id="filtered-count-badge" class="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">51 records</span>
+                    </div>
+                    <div class="text-xs text-slate-600 flex items-center gap-3">
+                        <span>Paid: <strong id="status-paid-count" class="text-emerald-600">0</strong></span>
+                        <span>Pending: <strong id="status-pending-count" class="text-rose-600">0</strong></span>
+                        <span>Total Sum: <strong id="table-total-sum" class="font-bold text-slate-900">₹87,200</strong></span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <th class="py-3 px-4 w-12 text-center">#</th>
+                                <th class="py-3 px-4">Student Name</th>
+                                <th class="py-3 px-4 text-center">Date Received</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                                <th class="py-3 px-4 text-right">Fee Amount</th>
+                                <th class="py-3 px-4 text-center w-28">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body" class="divide-y divide-slate-200/70 text-sm">
+                            <!-- Rows generated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="empty-state" class="hidden py-12 px-4 text-center">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                        <i class="fa-solid fa-user-slash text-2xl"></i>
+                    </div>
+                    <h4 class="text-base font-semibold text-slate-700">No students found matching criteria</h4>
+                    <p class="text-slate-500 text-sm mt-1">Click "Restore All 51" above to reload your initial student ledger.</p>
+                </div>
+            </div>
+
+        </main>
+
+        <footer class="bg-white border-t border-slate-200 mt-12 py-4 text-center text-xs text-slate-500">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p>Monthly Fee Collection & Ledger Manager</p>
+                <p class="flex items-center gap-1">
+                    <i class="fa-solid fa-shield-halved text-emerald-500"></i> Local Storage Persistence • No Auth Required
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Voice Diagnostic / Help Modal -->
+    <div id="voice-help-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-microphone text-emerald-600"></i> Voice Assistance Guide
+                </h3>
+                <button onclick="closeVoiceHelpModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="voice-diagnostic-content" class="space-y-3 text-sm text-slate-600">
+                <p class="font-medium text-slate-700">Using Speech Recognition:</p>
+                <ul class="space-y-1 list-disc pl-5 text-xs text-slate-600">
+                    <li>Ensure microphone permission is granted in browser address bar.</li>
+                    <li>Speak clearly: <strong>"Rahul 1500"</strong> or <strong>"Add Fayaz 2000"</strong>.</li>
+                    <li>You can also type in the <strong>Quick Text Command</strong> bar!</li>
+                </ul>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6">
+                <button type="button" onclick="closeVoiceHelpModal()" 
+                    class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> Edit Student Record
+                </h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="edit-form" onsubmit="saveEditedStudent(event)">
+                <input type="hidden" id="edit-student-id">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-name" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Student Name</label>
+                        <input type="text" id="edit-name" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                    </div>
+
+                    <div>
+                        <label for="edit-fee" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Fee Amount (₹)</label>
+                        <input type="number" id="edit-fee" min="0" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="edit-status" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>
+                            <select id="edit-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                                <option value="Paid">Paid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-date" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Date Paid</label>
+                            <input type="date" id="edit-date" 
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeEditModal()" 
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow transition-colors">
+                        Save Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        const DEFAULT_STUDENTS = [
+            { id: 1, name: "Allu", fee: 700 }, { id: 2, name: "Ammu", fee: 500 }, { id: 3, name: "Yavan", fee: 1000 },
+            { id: 4, name: "Ameena", fee: 750 }, { id: 5, name: "Ganga", fee: 750 }, { id: 6, name: "Navanya", fee: 500 },
+            { id: 7, name: "Hussain", fee: 1000 }, { id: 8, name: "Jordan", fee: 1000 }, { id: 9, name: "Smith", fee: 2000 },
+            { id: 10, name: "Pratik", fee: 2000 }, { id: 11, name: "Avani", fee: 1500 }, { id: 12, name: "Nanu", fee: 1000 },
+            { id: 13, name: "Eden", fee: 2500 }, { id: 14, name: "Anas", fee: 2500 }, { id: 15, name: "Adithya", fee: 2500 },
+            { id: 16, name: "Shuhaib", fee: 1300 }, { id: 17, name: "Thantra", fee: 1300 }, { id: 18, name: "Dina", fee: 1300 },
+            { id: 19, name: "Kunji", fee: 1300 }, { id: 20, name: "Akash", fee: 1300 }, { id: 21, name: "Naja", fee: 1500 },
+            { id: 22, name: "Nidha", fee: 1500 }, { id: 23, name: "Gouri", fee: 1500 }, { id: 24, name: "Bavia", fee: 1500 },
+            { id: 25, name: "Rameez", fee: 1500 }, { id: 26, name: "Abhinav", fee: 1500 }, { id: 27, name: "Sravan", fee: 1500 },
+            { id: 28, name: "Aravind", fee: 1500 }, { id: 29, name: "Gowtham", fee: 1500 }, { id: 30, name: "Dunn", fee: 1500 },
+            { id: 31, name: "Devoothan", fee: 1500 }, { id: 32, name: "Abhisheik", fee: 1500 }, { id: 33, name: "Nigan", fee: 2500 },
+            { id: 34, name: "Aashik", fee: 2500 }, { id: 35, name: "Jagannee", fee: 2500 }, { id: 36, name: "Anadhu", fee: 2500 },
+            { id: 37, name: "Anzil", fee: 2500 }, { id: 38, name: "Akhil", fee: 2500 }, { id: 39, name: "Rysad", fee: 2500 },
+            { id: 40, name: "Akku", fee: 2000 }, { id: 41, name: "Sanhen", fee: 2500 }, { id: 42, name: "Nichu", fee: 2000 },
+            { id: 43, name: "Fayaz", fee: 2000 }, { id: 44, name: "Hafiz", fee: 2000 }, { id: 45, name: "Sinan", fee: 2000 },
+            { id: 46, name: "James", fee: 2000 }, { id: 47, name: "Dirin", fee: 2000 }, { id: 48, name: "Adan", fee: 2000 },
+            { id: 49, name: "Aswin", fee: 2000 }, { id: 50, name: "Aswin", fee: 2000 }, { id: 51, name: "Hiran", fee: 2500 }
+        ];
+
+        let monthlyData = {};
+        let activeMonthKey = "2026-11"; 
+        let recognition = null;
+        let isListening = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            activeMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('month-picker').value = activeMonthKey;
+
+            loadInitialData();
+            initSpeechRecognition();
+            renderStudents();
+        });
+
+        function createDefaultMonthEntries(monthKey) {
+            return DEFAULT_STUDENTS.map(s => ({
+                id: s.id,
+                name: s.name,
+                fee: s.fee,
+                status: 'Paid',
+                datePaid: `${monthKey}-01`
+            }));
+        }
+
+        function loadInitialData() {
+            const savedData = localStorage.getItem('monthly_student_fees_app_v3');
+            if (savedData) {
+                try {
+                    monthlyData = JSON.parse(savedData);
+                } catch (e) {
+                    monthlyData = {};
+                }
+            }
+            
+            if (!monthlyData[activeMonthKey] || monthlyData[activeMonthKey].length === 0) {
+                monthlyData[activeMonthKey] = createDefaultMonthEntries(activeMonthKey);
+                saveToLocalStorage();
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('monthly_student_fees_app_v3', JSON.stringify(monthlyData));
+        }
+
+        function getCurrentMonthList() {
+            if (!monthlyData[activeMonthKey] || monthlyData[activeMonthKey].length === 0) {
+                monthlyData[activeMonthKey] = createDefaultMonthEntries(activeMonthKey);
+                saveToLocalStorage();
+            }
+            return monthlyData[activeMonthKey];
+        }
+
+        function changeActiveMonth() {
+            activeMonthKey = document.getElementById('month-picker').value;
+            if (!activeMonthKey) return;
+            
+            if (!monthlyData[activeMonthKey] || monthlyData[activeMonthKey].length === 0) {
+                monthlyData[activeMonthKey] = createDefaultMonthEntries(activeMonthKey);
+                saveToLocalStorage();
+            }
+            
+            renderStudents();
+        }
+
+        function formatCurrency(amount) {
+            return '₹' + Number(amount).toLocaleString('en-IN');
+        }
+
+        function renderStudents() {
+            const currentList = getCurrentMonthList();
+            const tbody = document.getElementById('student-table-body');
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const statusVal = document.getElementById('status-filter').value;
+            const clearBtn = document.getElementById('clear-search');
+
+            clearBtn.classList.toggle('hidden', searchVal === '');
+
+            const [year, month] = activeMonthKey.split('-');
+            const dateObj = new Date(year, parseInt(month, 10) - 1, 1);
+            const monthName = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            
+            document.getElementById('active-month-label').textContent = monthName;
+            document.getElementById('monthly-directory-title').textContent = `${monthName} Monthly Roster`;
+
+            let filtered = currentList.filter(s => {
+                const matchesSearch = s.name.toLowerCase().includes(searchVal) || s.fee.toString().includes(searchVal);
+                const matchesStatus = statusVal === 'All' || s.status === statusVal;
+                return matchesSearch && matchesStatus;
+            });
+
+            const totalSum = currentList.reduce((acc, curr) => acc + Number(curr.fee), 0);
+            const paidCount = currentList.filter(s => s.status === 'Paid').length;
+            const pendingCount = currentList.filter(s => s.status === 'Pending').length;
+
+            document.getElementById('header-student-count').textContent = currentList.length;
+            document.getElementById('header-total-amount').textContent = formatCurrency(totalSum);
+            document.getElementById('table-total-sum').textContent = formatCurrency(totalSum);
+            document.getElementById('status-paid-count').textContent = paidCount;
+            document.getElementById('status-pending-count').textContent = pendingCount;
+            document.getElementById('filtered-count-badge').textContent = `Showing ${filtered.length} of ${currentList.length}`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('empty-state').classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(student => {
+                const statusBadge = student.status === 'Paid' 
+                    ? `<span onclick="toggleStatus(${student.id})" class="cursor-pointer px-2.5 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">Paid</span>`
+                    : student.status === 'Partial'
+                    ? `<span onclick="toggleStatus(${student.id})" class="cursor-pointer px-2.5 py-1 text-xs rounded-full bg-amber-100 text-amber-800 font-semibold border border-amber-300">Partial</span>`
+                    : `<span onclick="toggleStatus(${student.id})" class="cursor-pointer px-2.5 py-1 text-xs rounded-full bg-rose-100 text-rose-800 font-semibold border border-rose-300">Pending</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="py-3 px-4 text-center font-medium text-slate-400 text-xs">#${student.id}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(student.name)}</td>
+                        <td class="py-3 px-4 text-center text-xs text-slate-500">${student.datePaid || '<span class="text-slate-300">Not Paid</span>'}</td>
+                        <td class="py-3 px-4 text-center">${statusBadge}</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-900">${formatCurrency(student.fee)}</td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="openEditModal(${student.id})" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="deleteStudent(${student.id})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleStatus(id) {
+            const list = getCurrentMonthList();
+            const student = list.find(s => s.id === id);
+            if (!student) return;
+
+            const now = new Date().toISOString().slice(0, 10);
+            if (student.status === 'Pending') {
+                student.status = 'Paid';
+                student.datePaid = now;
+            } else if (student.status === 'Paid') {
+                student.status = 'Partial';
+            } else {
+                student.status = 'Pending';
+                student.datePaid = '';
+            }
+
+            saveToLocalStorage();
+            renderStudents();
+            showToast(`Updated ${student.name} to ${student.status}`, "info");
+        }
+
+        function addStudent(name, fee, status = 'Paid', datePaid = null) {
+            const cleanName = name.trim();
+            const numericFee = parseInt(fee, 10);
+
+            if (!cleanName || isNaN(numericFee)) {
+                showToast("Invalid student name or fee amount", "error");
+                return false;
+            }
+
+            const list = getCurrentMonthList();
+            const existingIndex = list.findIndex(s => s.name.toLowerCase() === cleanName.toLowerCase());
+
+            const todayDate = datePaid || new Date().toISOString().slice(0, 10);
+
+            if (existingIndex !== -1) {
+                list[existingIndex].fee = numericFee;
+                list[existingIndex].status = status;
+                list[existingIndex].datePaid = todayDate;
+                showToast(`Updated ${cleanName} (${formatCurrency(numericFee)})`, "success");
+            } else {
+                const newId = list.length > 0 ? Math.max(...list.map(s => s.id)) + 1 : 1;
+                list.push({ id: newId, name: cleanName, fee: numericFee, status: status, datePaid: todayDate });
+                showToast(`Added ${cleanName} (${formatCurrency(numericFee)})`, "success");
+            }
+
+            saveToLocalStorage();
+            renderStudents();
+            return true;
+        }
+
+        function handleManualAdd(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('manual-name');
+            const feeInput = document.getElementById('manual-fee');
+            const statusInput = document.getElementById('manual-status');
+
+            if (addStudent(nameInput.value, feeInput.value, statusInput.value)) {
+                nameInput.value = '';
+                feeInput.value = '';
+                nameInput.focus();
+            }
+        }
+
+        function deleteStudent(id) {
+            let list = getCurrentMonthList();
+            const student = list.find(s => s.id === id);
+            if (!student) return;
+
+            if (confirm(`Remove ${student.name} from current roster?`)) {
+                monthlyData[activeMonthKey] = list.filter(s => s.id !== id);
+                saveToLocalStorage();
+                renderStudents();
+                showToast(`Removed ${student.name}`, "info");
+            }
+        }
+
+        function openEditModal(id) {
+            const list = getCurrentMonthList();
+            const student = list.find(s => s.id === id);
+            if (!student) return;
+
+            document.getElementById('edit-student-id').value = student.id;
+            document.getElementById('edit-name').value = student.name;
+            document.getElementById('edit-fee').value = student.fee;
+            document.getElementById('edit-status').value = student.status;
+            document.getElementById('edit-date').value = student.datePaid || new Date().toISOString().slice(0, 10);
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveEditedStudent(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-student-id').value, 10);
+            const name = document.getElementById('edit-name').value.trim();
+            const fee = parseInt(document.getElementById('edit-fee').value, 10);
+            const status = document.getElementById('edit-status').value;
+            const datePaid = document.getElementById('edit-date').value;
+
+            const list = getCurrentMonthList();
+            const studentIndex = list.findIndex(s => s.id === id);
+            if (studentIndex !== -1 && name && !isNaN(fee)) {
+                list[studentIndex].name = name;
+                list[studentIndex].fee = fee;
+                list[studentIndex].status = status;
+                list[studentIndex].datePaid = datePaid;
+                saveToLocalStorage();
+                renderStudents();
+                closeEditModal();
+                showToast(`Updated record for ${name}`, "success");
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            renderStudents();
+        }
+
+        function confirmResetData() {
+            if (confirm("Restore the complete original 51 students roster?")) {
+                monthlyData[activeMonthKey] = createDefaultMonthEntries(activeMonthKey);
+                saveToLocalStorage();
+                renderStudents();
+                showToast("Restored all 51 student records", "info");
+            }
+        }
+
+        function handleQuickPhraseAdd(e) {
+            e.preventDefault();
+            const phraseInput = document.getElementById('quick-phrase-input');
+            if (processVoiceCommand(phraseInput.value)) {
+                phraseInput.value = '';
+            }
+        }
+
+        function exportToCSV() {
+            const list = getCurrentMonthList();
+            if (list.length === 0) {
+                showToast("No data to export", "error");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Roll_No,Student_Name,Fee_Amount,Status,Date_Paid\n";
+            list.forEach(s => {
+                csvContent += `${s.id},"${s.name.replace(/"/g, '""')}",${s.fee},${s.status},${s.datePaid}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Student_Fees_${activeMonthKey}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast(`Exported ${activeMonthKey} to CSV`, "success");
+        }
+
+        function showVoiceHelpModal() {
+            document.getElementById('voice-help-modal').classList.remove('hidden');
+        }
+
+        function closeVoiceHelpModal() {
+            document.getElementById('voice-help-modal').classList.add('hidden');
+        }
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            try {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'en-IN';
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    document.getElementById('mic-btn').classList.add('mic-active');
+                    document.getElementById('voice-badge').textContent = "Listening...";
+                };
+
+                recognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    document.getElementById('voice-transcript').textContent = `"${transcript}"`;
+                    if (event.results[0].isFinal) {
+                        processVoiceCommand(transcript);
+                    }
+                };
+
+                recognition.onerror = () => stopListeningState();
+                recognition.onend = stopListeningState;
+            } catch (err) {
+                console.error("Speech Init Failed:", err);
+            }
+        }
+
+        async function toggleVoiceRecognition() {
+            if (!recognition) initSpeechRecognition();
+            if (!recognition) {
+                showToast("Speech recognition not supported.", "error");
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            stream.getTracks().forEach(track => track.stop());
+                        } catch (permErr) {
+                            showVoiceHelpModal();
+                            return;
+                        }
+                    }
+                    recognition.start();
+                } catch (e) {
+                    stopListeningState();
+                }
+            }
+        }
+
+        function stopListeningState() {
+            isListening = false;
+            document.getElementById('mic-btn').classList.remove('mic-active');
+            document.getElementById('voice-badge').textContent = "Ready";
+        }
+
+        function processVoiceCommand(speechText) {
+            let cleanText = speechText.toLowerCase().trim();
+            cleanText = cleanText.replace(/^(add|entry|collect|fee for|student|record|paid)\s+/i, '');
+
+            const numberMatch = cleanText.match(/\d+/);
+            if (!numberMatch) {
+                showToast("Could not recognize fee amount in speech", "error");
+                return false;
+            }
+
+            const feeAmount = parseInt(numberMatch[0], 10);
+            let studentName = cleanText
+                .replace(numberMatch[0], '')
+                .replace(/ rupees| rs| inr| fee| amount| for| paid| on| th| st| nd| rd/gi, '')
+                .trim();
+
+            studentName = studentName.replace(/\b\w/g, l => l.toUpperCase());
+
+            if (!studentName || studentName.length < 2) {
+                showToast("Could not identify student name", "error");
+                return false;
+            }
+
+            return addStudent(studentName, feeAmount, 'Paid');
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800';
+
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2 transition-all duration-300 opacity-0`;
+            toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('opacity-0'), 10);
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
