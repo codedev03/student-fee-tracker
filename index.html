@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Fee Collection Tracker</title>
+    <title>Student Monthly Fee Collection Tracker</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -31,7 +31,6 @@
         }
     </script>
     <style>
-        /* Pulse Animation for Recording Mic */
         @keyframes pulse-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
@@ -42,21 +41,10 @@
             background-color: #ef4444 !important;
             color: white !important;
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="h-full text-slate-800 font-sans flex flex-col justify-between">
@@ -70,18 +58,23 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-900 shadow-md">
-                        <i class="fa-solid me-0 fa-indian-rupee-sign text-lg font-bold"></i>
+                        <i class="fa-solid fa-indian-rupee-sign text-lg font-bold"></i>
                     </div>
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                            Fee Collection Tracker
+                            Monthly Fee Collection Tracker
                         </h1>
-                        <p class="text-xs text-slate-400">Audio-enabled fee entry & management</p>
+                        <p class="text-xs text-slate-400">Audio-enabled monthly student fee ledger</p>
                     </div>
                 </div>
 
-                <!-- Stats summary badges -->
-                <div class="flex items-center gap-3 text-sm">
+                <!-- Month Selector & Stats Badges -->
+                <div class="flex flex-wrap items-center gap-3 text-sm">
+                    <div class="bg-slate-800 border border-slate-700/60 px-3 py-1 rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i>
+                        <input type="month" id="month-picker" onchange="changeActiveMonth()" 
+                            class="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer">
+                    </div>
                     <div class="bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
                         <i class="fa-solid fa-users text-emerald-400"></i>
                         <span class="text-slate-400 hidden sm:inline">Students:</span>
@@ -89,7 +82,7 @@
                     </div>
                     <div class="bg-slate-800 border border-slate-700/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
                         <i class="fa-solid fa-wallet text-amber-400"></i>
-                        <span class="text-slate-400 hidden sm:inline">Total:</span>
+                        <span class="text-slate-400 hidden sm:inline">Collected:</span>
                         <span id="header-total-amount" class="font-bold text-amber-400">₹0</span>
                     </div>
                 </div>
@@ -105,7 +98,7 @@
                 
                 <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
                     
-                    <!-- Voice Input Hero Button & Status -->
+                    <!-- Voice Input Hero Button -->
                     <div class="flex flex-col sm:flex-row items-center gap-5 w-full lg:w-auto text-center sm:text-left">
                         <button id="mic-btn" onclick="requestMicAndStart()" 
                             class="w-20 h-20 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex flex-col items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 group shrink-0 relative focus:outline-none">
@@ -119,11 +112,11 @@
                                 <span id="voice-badge" class="px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30">Ready</span>
                             </div>
                             <p id="voice-transcript" class="text-sm text-slate-300 min-h-[20px] italic">
-                                "Click mic and speak, e.g., 'Rahul 1500' or 'Add Anzil 2500'"
+                                "Click mic and speak e.g. 'Rahul paid 1500 on Nov 3' or 'Fayaz 2000'"
                             </p>
                             <div class="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-3 pt-1">
-                                <span><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>Supports English & regional accents</span>
-                                <button onclick="showVoiceHelpModal()" class="text-emerald-400 hover:underline font-medium"><i class="fa-solid fa-circle-question mr-1"></i>Voice Help</button>
+                                <span><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>Active Month: <strong id="active-month-label" class="text-emerald-300">November 2026</strong></span>
+                                <button onclick="showVoiceHelpModal()" class="text-emerald-400 hover:underline font-medium"><i class="fa-solid fa-circle-question mr-1"></i>Help</button>
                             </div>
                         </div>
                     </div>
@@ -131,18 +124,17 @@
                     <!-- Divider -->
                     <div class="hidden lg:block h-16 w-px bg-slate-800"></div>
 
-                    <!-- Instant Natural Language Parser / Quick Command & Manual Input -->
+                    <!-- Instant Smart Parser / Manual Input -->
                     <div class="w-full lg:w-auto flex-1 max-w-lg bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 backdrop-blur-sm">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex justify-between items-center">
-                            <span>Quick Text Command / Manual Add</span>
-                            <span class="text-[10px] text-emerald-400">Smart Parser</span>
+                            <span>Quick Text Command / Add Record</span>
+                            <span class="text-[10px] text-emerald-400">Monthly Smart Parser</span>
                         </div>
                         
-                        <!-- Quick Phrase Smart Bar -->
                         <form onsubmit="handleQuickPhraseAdd(event)" class="flex gap-2 mb-2">
                             <div class="relative flex-1">
                                 <i class="fa-solid fa-wand-magic-sparkles absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
-                                <input type="text" id="quick-phrase-input" placeholder="Type phrase e.g. 'Rahul 1500' or 'Add Fayaz 2000'" 
+                                <input type="text" id="quick-phrase-input" placeholder="Type e.g. 'Rahul paid 1500' or 'Fayaz 2000 paid on 5th'" 
                                     class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-900/90 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
                             </div>
                             <button type="submit" 
@@ -151,18 +143,16 @@
                             </button>
                         </form>
 
-                        <!-- Standard Manual Fallback Fields -->
                         <form id="add-student-form" onsubmit="handleManualAdd(event)" class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative flex-1">
-                                <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                <input type="text" id="manual-name" placeholder="Student Name" required
-                                    class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-                            </div>
-                            <div class="relative w-full sm:w-28">
-                                <i class="fa-solid fa-indian-rupee-sign absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                <input type="number" id="manual-fee" placeholder="Amount" min="0" required
-                                    class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-                            </div>
+                            <input type="text" id="manual-name" placeholder="Student Name" required
+                                class="flex-1 pl-3 pr-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                            <input type="number" id="manual-fee" placeholder="Fee Amount" min="0" required
+                                class="w-full sm:w-24 px-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                            <select id="manual-status" class="w-full sm:w-24 px-2 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-300 focus:outline-none focus:border-emerald-500">
+                                <option value="Paid">Paid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Pending">Pending</option>
+                            </select>
                             <button type="submit" 
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 shrink-0">
                                 <i class="fa-solid fa-plus text-xs"></i> Add
@@ -173,41 +163,38 @@
                 </div>
             </div>
 
-            <!-- Controls Toolbar (Search, Filter, Actions) -->
+            <!-- Controls Toolbar (Search, Filter, Export) -->
             <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                 
-                <!-- Search Bar -->
                 <div class="relative w-full md:w-80">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="search-input" oninput="renderStudents()" placeholder="Search by student name or Roll #..." 
-                        class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
+                    <input type="text" id="search-input" oninput="renderStudents()" placeholder="Search student name or amount..." 
+                        class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
                     <button id="clear-search" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <!-- Sorting and Quick Actions -->
                 <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto text-xs sm:text-sm">
                     
                     <div class="flex items-center gap-2">
-                        <label for="sort-select" class="text-slate-500 font-medium whitespace-nowrap">Sort by:</label>
-                        <select id="sort-select" onchange="renderStudents()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:border-emerald-500">
-                            <option value="id-asc">Roll No. (Default)</option>
-                            <option value="name-asc">Name (A-Z)</option>
-                            <option value="fee-desc">Fee (High to Low)</option>
-                            <option value="fee-asc">Fee (Low to High)</option>
+                        <label for="status-filter" class="text-slate-500 font-medium">Status:</label>
+                        <select id="status-filter" onchange="renderStudents()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:border-emerald-500">
+                            <option value="All">All Statuses</option>
+                            <option value="Paid">Paid Only</option>
+                            <option value="Partial">Partial Only</option>
+                            <option value="Pending">Pending Only</option>
                         </select>
                     </div>
 
                     <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-                    <!-- Reset & Export Buttons -->
                     <div class="flex items-center gap-2">
-                        <button onclick="exportToCSV()" title="Export list as CSV" 
+                        <button onclick="exportToCSV()" title="Export current monthly ledger as CSV" 
                             class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center gap-1.5 border border-slate-200">
-                            <i class="fa-solid fa-file-csv text-emerald-600"></i> Export
+                            <i class="fa-solid fa-file-csv text-emerald-600"></i> Export CSV
                         </button>
-                        <button onclick="confirmResetData()" title="Reset to original 51 students list" 
+                        <button onclick="confirmResetData()" title="Reset to default original register" 
                             class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 rounded-lg font-medium transition-colors flex items-center gap-1.5 border border-slate-200">
                             <i class="fa-solid fa-rotate-right"></i> Reset
                         </button>
@@ -217,53 +204,54 @@
 
             </div>
 
-            <!-- Student Table / Grid Section -->
+            <!-- Student Directory Table -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between">
+                <div class="p-4 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <h3 class="font-semibold text-slate-800">Student Directory</h3>
-                        <span id="filtered-count-badge" class="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">Showing 51 students</span>
+                        <h3 class="font-semibold text-slate-800" id="monthly-directory-title">November 2026 Monthly Roster</h3>
+                        <span id="filtered-count-badge" class="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">51 records</span>
                     </div>
-                    <div class="text-xs text-slate-500">
-                        Total Sum: <span id="table-total-sum" class="font-bold text-slate-900">₹87,200</span>
+                    <div class="text-xs text-slate-600 flex items-center gap-3">
+                        <span>Paid: <strong id="status-paid-count" class="text-emerald-600">0</strong></span>
+                        <span>Pending: <strong id="status-pending-count" class="text-rose-600">0</strong></span>
+                        <span>Total Collected: <strong id="table-total-sum" class="font-bold text-slate-900">₹87,200</strong></span>
                     </div>
                 </div>
 
-                <!-- Desktop / Tablet Table View -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                                <th class="py-3 px-4 w-16 text-center">#</th>
+                                <th class="py-3 px-4 w-12 text-center">#</th>
                                 <th class="py-3 px-4">Student Name</th>
+                                <th class="py-3 px-4 text-center">Date Received</th>
+                                <th class="py-3 px-4 text-center">Status</th>
                                 <th class="py-3 px-4 text-right">Fee Amount</th>
-                                <th class="py-3 px-4 text-center w-32">Actions</th>
+                                <th class="py-3 px-4 text-center w-28">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="student-table-body" class="divide-y divide-slate-200/70 text-sm">
-                            <!-- Dynamically generated rows -->
+                            <!-- Rows generated via JS -->
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Empty state placeholder -->
                 <div id="empty-state" class="hidden py-12 px-4 text-center">
                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
                         <i class="fa-solid fa-user-slash text-2xl"></i>
                     </div>
-                    <h4 class="text-base font-semibold text-slate-700">No students found</h4>
-                    <p class="text-slate-500 text-sm mt-1">Try adjusting your search filter or add a new record using voice/manual input.</p>
+                    <h4 class="text-base font-semibold text-slate-700">No students recorded for this month</h4>
+                    <p class="text-slate-500 text-sm mt-1">Use the voice assistant or add buttons to note student payments.</p>
                 </div>
             </div>
 
         </main>
 
-        <!-- Footer -->
         <footer class="bg-white border-t border-slate-200 mt-12 py-4 text-center text-xs text-slate-500">
             <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <p>Pre-populated with original handwritten register data (51 Entries, ₹87,200 Total)</p>
+                <p>Monthly Fee Collection & Ledger Manager</p>
                 <p class="flex items-center gap-1">
-                    <i class="fa-solid fa-shield-halved text-emerald-500"></i> Client-side Local Storage • No Auth Required
+                    <i class="fa-solid fa-shield-halved text-emerald-500"></i> Local Storage Persistence • No Auth Required
                 </p>
             </div>
         </footer>
@@ -271,10 +259,10 @@
 
     <!-- Voice Diagnostic / Help Modal -->
     <div id="voice-help-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-microphone-slash text-rose-500"></i> Enabling Microphone Access
+                    <i class="fa-solid fa-microphone text-emerald-600"></i> Voice Assistance Guide
                 </h3>
                 <button onclick="closeVoiceHelpModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -282,18 +270,12 @@
             </div>
 
             <div id="voice-diagnostic-content" class="space-y-3 text-sm text-slate-600">
-                <p class="font-medium text-slate-700">Why does this prompt appear on Android / local files?</p>
-                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 space-y-1">
-                    <p class="font-semibold"><i class="fa-solid fa-file-code mr-1"></i> File Opened Directly (content:// or file://)</p>
-                    <p>Browsers restrict Web Speech API on offline HTML files for privacy reasons.</p>
-                </div>
-                <h4 class="font-semibold text-xs text-slate-800 uppercase tracking-wider pt-2">How to Fix on Mobile:</h4>
-                <ol class="space-y-1.5 list-decimal pl-5 text-xs text-slate-600">
-                    <li>Tap the <strong>Lock / Info icon</strong> next to the address bar at the top of your screen.</li>
-                    <li>Select <strong>Permissions</strong> or <strong>Site Settings</strong>.</li>
-                    <li>Toggle <strong>Microphone</strong> to <strong>"Allow"</strong>.</li>
-                    <li>Or host this single HTML file on GitHub Pages / Vercel / Netlify (Free 1-click host) to use full browser Speech Recognition anywhere!</li>
-                </ol>
+                <p class="font-medium text-slate-700">Supported Voice Phrases:</p>
+                <ul class="space-y-1 list-disc pl-5 text-xs text-slate-600">
+                    <li><strong>"Rahul paid 1500"</strong></li>
+                    <li><strong>"Anzil 2500 paid on 5th"</strong></li>
+                    <li><strong>"Collect 2000 from Fayaz"</strong></li>
+                </ul>
             </div>
 
             <div class="flex items-center justify-end gap-3 mt-6">
@@ -307,10 +289,10 @@
 
     <!-- Edit Student Modal -->
     <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> Edit Student Record
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> Edit Student Monthly Record
                 </h3>
                 <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -324,544 +306,4 @@
                     <div>
                         <label for="edit-name" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Student Name</label>
                         <input type="text" id="edit-name" required
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                    </div>
-
-                    <div>
-                        <label for="edit-fee" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Fee Amount (₹)</label>
-                        <input type="number" id="edit-fee" min="0" required
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 mt-6">
-                    <button type="button" onclick="closeEditModal()" 
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow transition-colors">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Application Script -->
-    <script>
-        // Default initial data set from handwritten register (51 records)
-        const DEFAULT_STUDENTS = [
-            { id: 1, name: "Allu", fee: 700 },
-            { id: 2, name: "Ammu", fee: 500 },
-            { id: 3, name: "Yavan", fee: 1000 },
-            { id: 4, name: "Ameena", fee: 750 },
-            { id: 5, name: "Ganga", fee: 750 },
-            { id: 6, name: "Navanya", fee: 500 },
-            { id: 7, name: "Hussain", fee: 1000 },
-            { id: 8, name: "Jordan", fee: 1000 },
-            { id: 9, name: "Smith", fee: 2000 },
-            { id: 10, name: "Pratik", fee: 2000 },
-            { id: 11, name: "Avani", fee: 1500 },
-            { id: 12, name: "Nanu", fee: 1000 },
-            { id: 13, name: "Eden", fee: 2500 },
-            { id: 14, name: "Anas", fee: 2500 },
-            { id: 15, name: "Adithya", fee: 2500 },
-            { id: 16, name: "Shuhaib", fee: 1300 },
-            { id: 17, name: "Thantra", fee: 1300 },
-            { id: 18, name: "Dina", fee: 1300 },
-            { id: 19, name: "Kunji", fee: 1300 },
-            { id: 20, name: "Akash", fee: 1300 },
-            { id: 21, name: "Naja", fee: 1500 },
-            { id: 22, name: "Nidha", fee: 1500 },
-            { id: 23, name: "Gouri", fee: 1500 },
-            { id: 24, name: "Bavia", fee: 1500 },
-            { id: 25, name: "Rameez", fee: 1500 },
-            { id: 26, name: "Abhinav", fee: 1500 },
-            { id: 27, name: "Sravan", fee: 1500 },
-            { id: 28, name: "Aravind", fee: 1500 },
-            { id: 29, name: "Gowtham", fee: 1500 },
-            { id: 30, name: "Dunn", fee: 1500 },
-            { id: 31, name: "Devoothan", fee: 1500 },
-            { id: 32, name: "Abhisheik", fee: 1500 },
-            { id: 33, name: "Nigan", fee: 2500 },
-            { id: 34, name: "Aashik", fee: 2500 },
-            { id: 35, name: "Jagannee", fee: 2500 },
-            { id: 36, name: "Anadhu", fee: 2500 },
-            { id: 37, name: "Anzil", fee: 2500 },
-            { id: 38, name: "Akhil", fee: 2500 },
-            { id: 39, name: "Rysad", fee: 2500 },
-            { id: 40, name: "Akku", fee: 2000 },
-            { id: 41, name: "Sanhen", fee: 2500 },
-            { id: 42, name: "Nichu", fee: 2000 },
-            { id: 43, name: "Fayaz", fee: 2000 },
-            { id: 44, name: "Hafiz", fee: 2000 },
-            { id: 45, name: "Sinan", fee: 2000 },
-            { id: 46, name: "James", fee: 2000 },
-            { id: 47, name: "Dirin", fee: 2000 },
-            { id: 48, name: "Adan", fee: 2000 },
-            { id: 49, name: "Aswin", fee: 2000 },
-            { id: 50, name: "Aswin", fee: 2000 },
-            { id: 51, name: "Hiran", fee: 2500 }
-        ];
-
-        // App state
-        let students = [];
-        let recognition = null;
-        let isListening = false;
-
-        // Initialize App
-        window.addEventListener('DOMContentLoaded', () => {
-            loadInitialData();
-            initSpeechRecognition();
-            renderStudents();
-        });
-
-        // Load data from LocalStorage or fallback to default dataset
-        function loadInitialData() {
-            const savedData = localStorage.getItem('student_fees_app_data');
-            if (savedData) {
-                try {
-                    students = JSON.parse(savedData);
-                } catch (e) {
-                    students = [...DEFAULT_STUDENTS];
-                }
-            } else {
-                students = [...DEFAULT_STUDENTS];
-                saveToLocalStorage();
-            }
-        }
-
-        // Save current students array to LocalStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('student_fees_app_data', JSON.stringify(students));
-        }
-
-        // Format Currency
-        function formatCurrency(amount) {
-            return '₹' + Number(amount).toLocaleString('en-IN');
-        }
-
-        // Render Student Table and Update Counts/Totals
-        function renderStudents() {
-            const tbody = document.getElementById('student-table-body');
-            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
-            const sortVal = document.getElementById('sort-select').value;
-            const clearBtn = document.getElementById('clear-search');
-
-            clearBtn.classList.toggle('hidden', searchVal === '');
-
-            // Filter students by search term
-            let filtered = students.filter(s => 
-                s.name.toLowerCase().includes(searchVal) || 
-                s.id.toString().includes(searchVal) ||
-                s.fee.toString().includes(searchVal)
-            );
-
-            // Sort students based on user choice
-            filtered.sort((a, b) => {
-                if (sortVal === 'name-asc') return a.name.localeCompare(b.name);
-                if (sortVal === 'fee-desc') return b.fee - a.fee;
-                if (sortVal === 'fee-asc') return a.fee - b.fee;
-                return a.id - b.id; // Default id-asc
-            });
-
-            // Update UI Counters
-            const totalSum = students.reduce((acc, curr) => acc + Number(curr.fee), 0);
-            const filteredSum = filtered.reduce((acc, curr) => acc + Number(curr.fee), 0);
-
-            document.getElementById('header-student-count').textContent = students.length;
-            document.getElementById('header-total-amount').textContent = formatCurrency(totalSum);
-            document.getElementById('table-total-sum').textContent = formatCurrency(filteredSum);
-            document.getElementById('filtered-count-badge').textContent = `Showing ${filtered.length} of ${students.length}`;
-
-            // Render Table Rows
-            if (filtered.length === 0) {
-                tbody.innerHTML = '';
-                document.getElementById('empty-state').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('empty-state').classList.add('hidden');
-
-            tbody.innerHTML = filtered.map(student => `
-                <tr class="hover:bg-slate-50/80 transition-colors group">
-                    <td class="py-3 px-4 text-center font-medium text-slate-400 text-xs">
-                        #${student.id}
-                    </td>
-                    <td class="py-3 px-4 font-semibold text-slate-800">
-                        ${escapeHtml(student.name)}
-                    </td>
-                    <td class="py-3 px-4 text-right font-bold text-slate-900">
-                        ${formatCurrency(student.fee)}
-                    </td>
-                    <td class="py-3 px-4 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <button onclick="openEditModal(${student.id})" 
-                                class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
-                                title="Edit Student">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </button>
-                            <button onclick="deleteStudent(${student.id})" 
-                                class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" 
-                                title="Delete Student">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // Add Student Core Function
-        function addStudent(name, fee) {
-            const cleanName = name.trim();
-            const numericFee = parseInt(fee, 10);
-
-            if (!cleanName || isNaN(numericFee)) {
-                showToast("Invalid student name or fee amount", "error");
-                return false;
-            }
-
-            const newId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
-            const newStudent = { id: newId, name: cleanName, fee: numericFee };
-
-            students.push(newStudent);
-            saveToLocalStorage();
-            renderStudents();
-
-            showToast(`Added: ${cleanName} (${formatCurrency(numericFee)})`, "success");
-            return true;
-        }
-
-        // Handle Manual Form Submission
-        function handleManualAdd(e) {
-            e.preventDefault();
-            const nameInput = document.getElementById('manual-name');
-            const feeInput = document.getElementById('manual-fee');
-
-            if (addStudent(nameInput.value, feeInput.value)) {
-                nameInput.value = '';
-                feeInput.value = '';
-                nameInput.focus();
-            }
-        }
-
-        // Delete Student
-        function deleteStudent(id) {
-            const student = students.find(s => s.id === id);
-            if (!student) return;
-
-            if (confirm(`Are you sure you want to delete ${student.name}?`)) {
-                students = students.filter(s => s.id !== id);
-                saveToLocalStorage();
-                renderStudents();
-                showToast(`Removed ${student.name}`, "info");
-            }
-        }
-
-        // Modal Edit Handlers
-        function openEditModal(id) {
-            const student = students.find(s => s.id === id);
-            if (!student) return;
-
-            document.getElementById('edit-student-id').value = student.id;
-            document.getElementById('edit-name').value = student.name;
-            document.getElementById('edit-fee').value = student.fee;
-            
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-        }
-
-        function saveEditedStudent(e) {
-            e.preventDefault();
-            const id = parseInt(document.getElementById('edit-student-id').value, 10);
-            const name = document.getElementById('edit-name').value.trim();
-            const fee = parseInt(document.getElementById('edit-fee').value, 10);
-
-            const studentIndex = students.findIndex(s => s.id === id);
-            if (studentIndex !== -1 && name && !isNaN(fee)) {
-                students[studentIndex].name = name;
-                students[studentIndex].fee = fee;
-                saveToLocalStorage();
-                renderStudents();
-                closeEditModal();
-                showToast(`Updated record for ${name}`, "success");
-            }
-        }
-
-        // Clear Search Filter
-        function clearSearch() {
-            document.getElementById('search-input').value = '';
-            renderStudents();
-        }
-
-        // Reset Data to Original List
-        function confirmResetData() {
-            if (confirm("Reset dataset back to the original 51 students list (Total ₹87,200)? Any custom additions will be cleared.")) {
-                students = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
-                saveToLocalStorage();
-                renderStudents();
-                showToast("Data restored to default register list", "info");
-            }
-        }
-
-        // Handle Quick Phrase Command Bar Form
-        function handleQuickPhraseAdd(e) {
-            e.preventDefault();
-            const phraseInput = document.getElementById('quick-phrase-input');
-            const phrase = phraseInput.value;
-            if (!phrase.trim()) return;
-
-            const success = processVoiceCommand(phrase);
-            if (success) {
-                phraseInput.value = '';
-            }
-        }
-
-        // Export data to CSV
-        function exportToCSV() {
-            if (students.length === 0) {
-                showToast("No data to export", "error");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,Roll_No,Student_Name,Fee_Amount\n";
-            students.forEach(s => {
-                csvContent += `${s.id},"${s.name.replace(/"/g, '""')}",${s.fee}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Student_Fee_Collection_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Exported to CSV successfully", "success");
-        }
-
-        // Voice Modal Helpers
-        function showVoiceHelpModal(reasonText = null) {
-            if (reasonText) {
-                const diag = document.getElementById('voice-diagnostic-content');
-                diag.insertAdjacentHTML('afterbegin', `<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs font-medium mb-3"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${reasonText}</div>`);
-            }
-            document.getElementById('voice-help-modal').classList.remove('hidden');
-        }
-
-        function closeVoiceHelpModal() {
-            document.getElementById('voice-help-modal').classList.add('hidden');
-        }
-
-        /* ---------------------------------------------------
-         * WEB SPEECH API & VOICE PARSING LOGIC
-         * --------------------------------------------------- */
-        async function requestMicAndStart() {
-            // First check mediaDevices explicit permission to prompt Android permission dialog
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    // Permission granted! Stop stream immediately and launch recognition
-                    stream.getTracks().forEach(track => track.stop());
-                    toggleVoiceRecognition();
-                } catch (err) {
-                    console.warn("getUserMedia permission error:", err);
-                    showVoiceHelpModal("Microphone permission was denied by the browser or system setting.");
-                    showToast("Microphone permission required", "error");
-                }
-            } else {
-                toggleVoiceRecognition();
-            }
-        }
-
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-            if (!SpeechRecognition) {
-                document.getElementById('voice-transcript').textContent = "Speech API not natively supported in this webview. Use Quick Command bar below.";
-                document.getElementById('voice-badge').textContent = "Use Quick Bar";
-                document.getElementById('voice-badge').className = "px-2 py-0.5 text-xs rounded-full bg-slate-700 text-slate-300 font-medium";
-                return;
-            }
-
-            try {
-                recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = true;
-                recognition.lang = 'en-IN'; // Optimized for Indian English accents
-
-                recognition.onstart = () => {
-                    isListening = true;
-                    const micBtn = document.getElementById('mic-btn');
-                    const badge = document.getElementById('voice-badge');
-                    
-                    micBtn.classList.add('mic-active');
-                    badge.textContent = "Listening...";
-                    badge.className = "px-2 py-0.5 text-xs rounded-full bg-rose-500/20 text-rose-300 font-medium border border-rose-500/30 animate-pulse";
-                    document.getElementById('voice-transcript').textContent = "Listening... Speak name & fee now (e.g. 'Anzil 2500')...";
-                };
-
-                recognition.onresult = (event) => {
-                    let transcript = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        transcript += event.results[i][0].transcript;
-                    }
-
-                    document.getElementById('voice-transcript').textContent = `"${transcript}"`;
-
-                    if (event.results[0].isFinal) {
-                        processVoiceCommand(transcript);
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    console.warn("Speech Recognition Error Event:", event.error);
-                    stopListeningState();
-                    
-                    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-                        showVoiceHelpModal("Microphone permission was denied.");
-                    } else if (event.error === 'no-speech') {
-                        showToast("No speech detected. Please speak clearly into your mic.", "info");
-                    } else if (event.error === 'network' || event.error === 'service-not-allowed') {
-                        showVoiceHelpModal("Voice service restriction detected. Browser blocked speech API for local file.");
-                    }
-                };
-
-                recognition.onend = () => {
-                    stopListeningState();
-                };
-            } catch (err) {
-                console.error("Speech Init Failed:", err);
-                document.getElementById('voice-transcript').textContent = "Voice Assistant unavailable. Use Quick Command bar below.";
-            }
-        }
-
-        function toggleVoiceRecognition() {
-            if (!recognition) {
-                showVoiceHelpModal("Speech recognition is not supported or permitted on this browser context.");
-                return;
-            }
-
-            if (isListening) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Error starting speech recognition:", e);
-                    stopListeningState();
-                    showVoiceHelpModal("Failed to start recording. Check mic permissions.");
-                }
-            }
-        }
-
-        function stopListeningState() {
-            isListening = false;
-            const micBtn = document.getElementById('mic-btn');
-            const badge = document.getElementById('voice-badge');
-
-            if (micBtn) micBtn.classList.remove('mic-active');
-            if (badge) {
-                badge.textContent = "Ready";
-                badge.className = "px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30";
-            }
-        }
-
-        /**
-         * Intelligent Voice / Phrase Parser
-         */
-        function processVoiceCommand(speechText) {
-            let cleanText = speechText.toLowerCase().trim();
-            
-            // Remove common filler prefix words
-            cleanText = cleanText.replace(/^(add|entry|collect|fee for|student|record|please add|added)\s+/i, '');
-
-            // Convert spoken numbers
-            const spokenNumberMap = {
-                'one thousand': '1000',
-                'fifteen hundred': '1500',
-                'two thousand': '2000',
-                'twenty five hundred': '2500',
-                'three thousand': '3000'
-            };
-
-            Object.keys(spokenNumberMap).forEach(phrase => {
-                if (cleanText.includes(phrase)) {
-                    cleanText = cleanText.replace(phrase, spokenNumberMap[phrase]);
-                }
-            });
-
-            // Extract numbers from phrase
-            const numberMatch = cleanText.match(/\d+/);
-
-            if (!numberMatch) {
-                showToast("Could not recognize fee amount in speech/text. Try again.", "error");
-                document.getElementById('voice-transcript').textContent = `Could not parse fee amount from: "${speechText}"`;
-                return false;
-            }
-
-            const feeAmount = parseInt(numberMatch[0], 10);
-            
-            // Extract student name
-            let studentName = cleanText
-                .replace(numberMatch[0], '')
-                .replace(/ rupees| rs| inr| fee| amount| for/gi, '')
-                .trim();
-
-            studentName = studentName.replace(/\b\w/g, l => l.toUpperCase());
-
-            if (!studentName || studentName.length < 2) {
-                showToast("Could not clearly identify student name. Please try again.", "error");
-                document.getElementById('voice-transcript').textContent = `Could not parse name from: "${speechText}"`;
-                return false;
-            }
-
-            // Successfully parsed phrase! Add student entry
-            const success = addStudent(studentName, feeAmount);
-            if (success) {
-                document.getElementById('voice-transcript').textContent = `Successfully added: "${studentName}" - ₹${feeAmount}`;
-                return true;
-            }
-            return false;
-        }
-
-        // Utility: Toast Alerts
-        function showToast(message, type = "info") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800';
-            const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info';
-
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2 pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0`;
-            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
-
-            container.appendChild(toast);
-
-            // Animate in
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            // Remove toast after delay
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Utility: Escape HTML String
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-    </script>
-</body>
-</html>
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 foc
